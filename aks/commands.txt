@@ -1,0 +1,27 @@
+#how to deploy and use azure container registry#
+
+az acr list --resource-group myResourceGroup --query "[].{acrLoginServer:loginServer}" --output table
+
+docker tag shoppingapi:latest shoppingacr1997.azurecr.io/shoppingapi:v1
+docker tag shoppingapi:latest shoppingacr1997.azurecr.io/shoppingclient:v1
+
+docker push shoppingacr1997.azurecr.io/shoppingapi:v1
+docker push shoppingacr1997.azurecr.io/shoppingclient:v1
+
+#how to deploy an Azure Kubernetes Service cluster#
+
+az aks create --resource-group myResourceGroup --name myAKSCluster --node-count 1 --generate-ssh-keys --attach-acr shoppingacr1997
+az aks install-cli
+az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+kubectl get nodes
+
+#how to run applications in AKS#
+
+az acr repository list --name shoppingacr1997 --output table
+kubectl create secret docker-registry acr-secret --docker-server=shoppingacr1997.azurecr.io --docker-username=shoppingacr --docker-password=0PWxR4trNTTyWAFDXMykOS0/gKXmfXXalkn2Vbkofs+ACRCcvWCH --docker-email=tecargabrieleugen@gmail.com
+kubectl get secret
+
+- copy shoppingapi.yml file into aks folder, and change the image from "image: eugentecar/shoppingapi:latest" -> "shoppingacr1997.azurecr.io/shoppingapi:v1"; add imagePullSecrets (do this for all .yml files)
+- find the service for shoppingapi and shoppingclient. For shoppingapi : delete the type category, and delete the nodePort and targetPort from the ports category, change the port to "80" from the ports category. For the shoppingclient : change the type to LoadBalancer and delete the nodePort and targetPort from the ports category, change the port to "80" from the ports category
+
+kubectl apply -f .\aks\
